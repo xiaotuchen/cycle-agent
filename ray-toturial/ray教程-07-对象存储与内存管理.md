@@ -112,8 +112,8 @@ memory limit 与 `object_store_memory` 的关系（后者算在前者里）。
 **②为什么必须存在**：没有 pin 的话，一个正在被读的对象可能在「引用计数归零的瞬间」
 被回收，而持有指针的进程还在这块内存上算 —— 直接段错误。
 
-Ray 里 pin 的生命周期**跟着这块内存的客户端引用**（`PlasmaBuffer`），
-不跟着 ObjectRef。这个区别在下面这个场景里很关键：
+<mark>Ray 里 pin 的生命周期**跟着这块内存的客户端引用**（`PlasmaBuffer`），
+不跟着 ObjectRef。这个区别在下面这个场景里很关键：</mark>
 
 ```python
 arr = ray.get(ref)     # arr 是零拷贝视图,pin 建立
