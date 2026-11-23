@@ -37,10 +37,10 @@ DEVICES=0         DEVICES=1        DEVICES=2,3
  cuda:0 就是物理卡0  cuda:0 是物理卡1  cuda:0/1 是物理卡2/3
 ```
 
-**关键推论**：在 worker 内部，**`cuda:0` 永远是「我分到的那张卡」**，
+<mark>**关键推论**：在 worker 内部，**`cuda:0` 永远是「我分到的那张卡」**，
 而不是物理 0 号卡。所以你的代码里应该写 `cuda:0` 或者干脆写 `cuda`，
 **绝对不要**写 `cuda:3` —— 那会指向「我这个进程可见的第 4 张卡」，
-而它多半不存在。
+而它多半不存在。</mark>
 
 ```python
 import ray
@@ -64,9 +64,9 @@ print(ray.get(where_am_i.remote()))
 #  'torch.cuda.current_device()': 0}     ← 注意这里是 0,不是 3
 ```
 
-`ray.get_gpu_ids()` 返回的是**物理卡号**（运维/日志视角），
+<mark>`ray.get_gpu_ids()` 返回的是**物理卡号**（运维/日志视角），
 `torch.cuda.current_device()` 返回的是**进程内逻辑编号**（代码视角）。
-**这两个数字在非 0 号卡上永远不相等** —— 这是查 GPU 问题时最常见的困惑源。
+**这两个数字在非 0 号卡上永远不相等** —— 这是查 GPU 问题时最常见的困惑源。</mark>
 
 ### 什么时候设置？
 
@@ -75,7 +75,7 @@ print(ray.get(where_am_i.remote()))
 Ray 的 worker 是 `spawn` 出来的子进程，`CUDA_VISIBLE_DEVICES` 通过
 进程环境注入。这带来两条实践约束：
 
-**① 不能「先 import torch 再改环境变量」。**
+<mark>**① 不能「先 import torch 再改环境变量」。**</mark>
 CUDA 运行时在**第一次调用 CUDA API 时**读取 `CUDA_VISIBLE_DEVICES` 并缓存。
 所以：
 
@@ -118,9 +118,9 @@ import torch
 * 结果是**资源超配**：8 个 worker 都认为自己有 4 张卡，全挤在物理 0-3 上，
   而 4-7 号卡闲着。
 
-**规则**：在 Ray 里**永远不要自己设 `CUDA_VISIBLE_DEVICES`**。
+<mark>**规则**：在 Ray 里**永远不要自己设 `CUDA_VISIBLE_DEVICES`**。
 需要选择设备时用 `num_gpus` 和 `accelerator_type`（第 8 章 §8.2）；
-需要读设备号时用 `ray.get_gpu_ids()`。
+需要读设备号时用 `ray.get_gpu_ids()`。</mark>
 
 ---
 
@@ -160,8 +160,8 @@ def train(): ...
 
 ### 显存必须自己分
 
-因为 Ray 不隔离显存，**你必须显式限制每个副本的显存**，
-否则第一个副本会把卡吃满：
+<mark>因为 Ray 不隔离显存，**你必须显式限制每个副本的显存**，
+否则第一个副本会把卡吃满：</mark>
 
 ```python
 @ray.remote(num_gpus=0.5)
@@ -271,9 +271,9 @@ def worker(rank, world_size, master_addr, master_port):
         dist.destroy_process_group()
 ```
 
-**超时**是最常被忽略的一行。`init_process_group` 的默认超时是 **10 分钟**，
+<mark>**超时**是最常被忽略的一行。`init_process_group` 的默认超时是 **10 分钟**，
 而一个 70B 模型的第一次 all-gather 可能要更久 ——
-表现为「训练莫名其妙地在 10 分钟处报 NCCL timeout」。
+表现为「训练莫名其妙地在 10 分钟处报 NCCL timeout」。</mark>
 
 ---
 
@@ -340,9 +340,9 @@ NCCL hang
 **第 3 条是最隐蔽的**：只要有一个 rank 的**集合操作调用序列**和其它 rank 不一致，
 NCCL 就永远等下去。所以规则是：
 
-> **「所有 rank 必须走同样的集合操作序列」**。
-> 想只在 rank 0 上做点什么？用 `if rank == 0:` 包住**非集合操作**
-> （写日志、存盘、`print`），**绝不能**包住 `all_reduce` / `broadcast` 这类调用。
+> <mark>**「所有 rank 必须走同样的集合操作序列」**。</mark>
+> <mark>想只在 rank 0 上做点什么？用 `if rank == 0:` 包住**非集合操作**</mark>
+> <mark>（写日志、存盘、`print`），**绝不能**包住 `all_reduce` / `broadcast` 这类调用。</mark>
 
 ### PyTorch 侧的对应变量
 
