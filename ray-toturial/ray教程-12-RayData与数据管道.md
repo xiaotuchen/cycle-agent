@@ -94,7 +94,7 @@ ds = ds.map_batches(lambda b: {"x": b["x"] * 2}, batch_format="pandas")
 | 消费（eager） | `iter_batches` / `iter_torch_batches` / `take` / `show` / `count` / `write_*` / `materialize`（旧名 `cache()`，2.4 已改名） | 是 |
 | 阻塞（物化） | `sort` / `groupby` / `join` / `repartition` | 是，且会插入 barrier |
 
-写 Ray Data 最常见的性能事故是**在循环里反复构造消费调用**：
+<mark>写 Ray Data 最常见的性能事故是**在循环里反复构造消费调用**：</mark>
 
 ```python
 for epoch in range(10):
@@ -113,7 +113,7 @@ for epoch in range(10):
   cache」。网上两套名字都能搜到，但它们是同一个东西，不存在两种物化语义）；
 * 想每轮**换一个洗牌顺序**：`Dataset` 自身没有多 epoch 语义，走**消费端**洗牌
   （见下一节的 `local_shuffle_seed`），它不会让上游重跑；
-* **别指望第二轮变快** —— 没有 `.materialize()` 就不会。
+* <mark>**别指望第二轮变快** —— 没有 `.materialize()` 就不会。</mark>
 
 ### 每轮换序：只能在消费端做
 
