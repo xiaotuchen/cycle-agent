@@ -212,8 +212,8 @@ array[0] = 1        # ValueError: assignment destination is read-only
 这不是限制，而是零拷贝的前提：如果允许改，所有共享这块内存的读者都会受影响
 （详见第 07 章）。
 
-**(4) 它参与引用计数** —— 句柄活着，对象就不会被回收；句柄被 GC，对象才可能被释放。
-所以「内存下不去」的第一嫌疑永远是：**某个地方还攥着 ObjectRef**。
+<mark>**(4) 它参与引用计数** —— 句柄活着，对象就不会被回收；句柄被 GC，对象才可能被释放。
+所以「内存下不去」的第一嫌疑永远是：**某个地方还攥着 ObjectRef**。</mark>
 
 ### `ray.wait`：等「任意 N 个」
 
@@ -338,9 +338,9 @@ result = ray.get(aggregate.remote(parsed))
    （依赖反查表的实现见第 06 章 §6.7 与 `miniray/scheduler.py`；
    调度**策略**层面见第 08 章）。
 
-**一个常见的性能陷阱**：如果 `aggregate.remote(parsed)` 里传的是一个包含 1000 个
+<mark>**一个常见的性能陷阱**：如果 `aggregate.remote(parsed)` 里传的是一个包含 1000 个
 ref 的列表，那么 1000 个依赖对象会在 aggregate 开始时**全部拉取**到它所在的节点。
-这不是 bug，但要清楚它的代价。
+这不是 bug，但要清楚它的代价。</mark>
 
 ---
 
