@@ -376,15 +376,15 @@ for batch in splits[0].iter_batches(batch_size=256):   # 每个消费者各拉�
     ...
 ```
 
-**为什么 `streaming_split` 对分布式训练重要**：
+<mark>**为什么 `streaming_split` 对分布式训练重要**：</mark>
 
 * `split(n)` 是"物化 + 切"：先把数据算出来（并驻留在对象存储里），再切成 n 份
   `Dataset`；而 `streaming_split(n)` 返回 n 个**迭代器**，不物化整份数据 ——
   每个 worker 自己从上游拉自己的那一份，内存占用是"流"的量级；
 * `locality_hints` 告诉 Ray 每个消费者在哪台机器上，让分片尽量落在本地节点，
   省掉跨节点流量 —— 这就是多机训练里"数据贴近 GPU"的开关；
-* **这就是 Ray Train 那边 `get_dataset_shard()` 底下干的事**（13.3）：每个 worker
-  拿到一个互不重叠的流，而不是"driver 全量取回来再切"；
+* **这就是 Ray Train 那边 `get_dataset_shard()` 底下干的事**（13.3）：<mark>每个 worker
+  拿到一个互不重叠的流，而不是"driver 全量取回来再切"；</mark>
 * 另外还有 `ds.split_at_indices([...])`（按行号切）和 `ds.split_proportionately([...])`
   （按比例切）—— **两个都已核实存在**（2.58 的 `dataset.py` 第 2545 行与第 2625 行）；
   `equal=True` 要求能均分，做不到时的报错条件**未确认**。
@@ -803,8 +803,8 @@ SGLang 的 `radix_attention` 之类）。
 两个说明它确实还在动的已知问题：
 
 * `build_processor` 在 vLLM ≥ 0.19 上会因 `vllm.inputs.data` 被移除而报
-  `AttributeError`（issue #64275，修复见 PR #64337）。**引擎版本与
-  `ray.data.llm` 的耦合是真实风险**，上生产要锁版本。
+  `AttributeError`（issue #64275，修复见 PR #64337）。<mark>**引擎版本与
+  `ray.data.llm` 的耦合是真实风险**，上生产要锁版本。</mark>
 * 旧的 `build_llm_processor` 已被**移除**（PR #63569）；`apply_chat_template=True`
   这类布尔开关**已弃用**，改为 `chat_template_stage=ChatTemplateStageConfig(...)`
   （类定义在 `python/ray/data/llm.py`，同族还有 `TokenizerStageConfig` /
@@ -831,8 +831,8 @@ SGLang 的 `radix_attention` 之类）。
 * **Ibis 集成**：社区在 issue 里追问这是"把 Ray Data 当 Ibis 后端"还是
   "给 Ray Data 加 DataFrame API"，**这条细节未确认**。
 
-这清单读出的是定位：**强项在 UDF 密集、GPU 密集、与训练紧耦合的管道；
-弱项在纯关系代数（多表 join、复杂聚合、超大规模 shuffle）。**
+<mark>这清单读出的是定位：**强项在 UDF 密集、GPU 密集、与训练紧耦合的管道；
+弱项在纯关系代数（多表 join、复杂聚合、超大规模 shuffle）。** </mark>
 
 | 你的任务 | 建议 |
 |---|---|
@@ -843,7 +843,7 @@ SGLang 的 `radix_attention` 之类）。
 | 已有 Spark 管道只想跑一次推理 | 上游 Spark 落 parquet，Ray Data 只做推理段 |
 | 需要被 BI 工具查询的结果表 | 写 Delta/Iceberg，用别的引擎查 |
 
-一句话：**Ray Data 是"AI 管道的最后一公里"，不是数仓的地基。**
+<mark>一句话：**Ray Data 是"AI 管道的最后一公里"，不是数仓的地基。** </mark>
 
 ## 12.6 调优与常见坑
 
@@ -860,8 +860,8 @@ SGLang 的 `radix_attention` 之类）。
 * 单条记录本身巨大（4K 视频帧、长音频）时切不动；
 * `map_batches` 返回的 batch 特别大时也切不动 —— 只能把 `batch_size` 调小。
 
-2.56 起 CPU 的 `map_batches` 支持 `batch_size="auto"`：采样行大小后挑一个让
-输入控制在约 16MB 以下的 batch size（**文档后来澄清这条只在不用 GPU 时生效**）。
+<mark>2.56 起 CPU 的 `map_batches` 支持 `batch_size="auto"`：采样行大小后挑一个让
+输入控制在约 16MB 以下的 batch size（**文档后来澄清这条只在不用 GPU 时生效**）。</mark>
 
 ### 坑 2：对象存储压力
 
@@ -922,7 +922,7 @@ V2 hash shuffle 用 **bounded online sampling** 估 aggregator 大小（PR #6392
 已知问题（issue #66016）：每个输出 block 的统计信息会**保留到 Dataset 生命周期
 结束**，driver 内存随累计 block 数单调增长；issue 明确说这**不能靠调 block size /
 concurrency / backpressure 解决**，对"产出大量小 block"的负载尤其明显。
-缓解办法是分阶段处理、及时释放 Dataset 引用。
+<mark>缓解办法是分阶段处理、及时释放 Dataset 引用。</mark>
 
 ### 坑 6：GPU 利用率低
 
@@ -1005,11 +1005,11 @@ ds = ray.data.read_parquet(...)   # 之后建的 Dataset 才会带上这些设�
   API（例如 `write_delta(..., ray_remote_args=None)`）。
   这与改全局 `DataContext` 不是一回事：一个是算子级、一个是作业级。
 
-> **提示**：调 `DataContext` 之前先量一遍。`ds.stats()` / dashboard 的 operator
+> <mark>**提示**：调 `DataContext` 之前先量一遍。</mark> `ds.stats()` / dashboard 的 operator
 > 指标（12.1 提过）能告诉你瓶颈在 I/O、CPU UDF 还是对象存储；没有基线就调参，
 > 大概率只是把 OOM 从内存挪到磁盘。
 
-## 12.7 完整示例：批量推理管道
+## <mark>12.7 完整示例：批量推理管道</mark>
 
 一个"读 parquet → 分块 → GPU 批推理 → 写 Delta"的可读骨架，注意取舍注释。
 
@@ -1072,7 +1072,7 @@ ds = ds.map_batches(Classifier,
 ds.write_delta("s3://bucket/lake/query_labels", mode="append", partition_by=["dt"])
 ```
 
-### 三个值得单独说的点
+### <mark>三个值得单独说的点</mark>
 
 **（1）为什么 tokenize 和推理要拆成两个算子？** 塞进同一个 actor，GPU 会在
 tokenize 期间闲着，而 tokenize 是纯 CPU 活。拆开后 Ray Data 让它们按 block 流水：
